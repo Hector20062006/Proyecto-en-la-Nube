@@ -26,18 +26,36 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ansible openssh-client
 
-      - name: Configurar clave SSH desde Base64
+      - name: Configurar clave SSH
+        # Inyectamos el secret como variable de entorno para proteger el formato
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.ANSIBLE_PRIVATE_KEY }}
         run: |
           mkdir -p ~/.ssh
-          # Decodificamos el secret y lo volcamos al fichero de identidad
-          echo "${{ secrets.ANSIBLE_PRIVATE_KEY }}" | base64 -d > ~/.ssh/id_rsa
-          # Aplicamos los permisos estrictos obligatorios
+          # Volcamos la variable de entorno entre comillas dobles al fichero
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Configurar clave SSH
+        id: config_clave_ssh # Le asignamos una etiqueta única a este paso
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.ANSIBLE_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
       - name: Ejecutar Ansible
+        # Candado 1: GitHub Actions no arrancará esto si el paso anterior no devolvió un "éxito"
+        if: steps.config_clave_ssh.outcome == 'success' 
         env:
-          # Desactivamos el chequeo de fingerprint para evitar bloqueos interactivos
           ANSIBLE_HOST_KEY_CHECKING: "False"
         run: |
-          # Forzamos a Ansible a utilizar el fichero que acabamos de generar
+          # Candado 2: Verificamos a nivel de Bash que el fichero existe y tiene un tamaño mayor a 0 bytes (-s)
+          if [ ! -s ~/.ssh/id_rsa ]; then
+            echo "💥 ERROR CRÍTICO: El fichero id_rsa no existe o está vacío. Abortando el despliegue."
+            exit 1
+          fi
+          
+          echo "✅ Clave verificada. Lanzando Ansible..."
           ansible-playbook -i ansible-web/host.ini ansible-web/tasks/main.yml --private-key ~/.ssh/id_rsa
