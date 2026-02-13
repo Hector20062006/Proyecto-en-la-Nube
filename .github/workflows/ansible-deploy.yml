@@ -51,11 +51,4 @@ jobs:
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
         run: |
-          # Candado 2: Verificamos a nivel de Bash que el fichero existe y tiene un tamaño mayor a 0 bytes (-s)
-          if [ ! -s ~/.ssh/id_rsa ]; then
-            echo "💥 ERROR CRÍTICO: El fichero id_rsa no existe o está vacío. Abortando el despliegue."
-            exit 1
-          fi
-          
-          echo "✅ Clave verificada. Lanzando Ansible..."
-          ansible-playbook -i ansible-web/host.ini ansible-web/tasks/main.yml --private-key ~/.ssh/id_rsa
+          ansible-playbook ec2 ansible-web/tasks/main.yml --private-key ~/.ssh/id_rsa
