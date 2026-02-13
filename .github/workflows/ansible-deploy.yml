@@ -44,11 +44,17 @@ jobs:
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-
       - name: Ejecutar Ansible
         if: steps.config_clave_ssh.outcome == 'success' 
         env:
-          # Obligamos a Ansible a leer este fichero de configuración específico
           ANSIBLE_CONFIG: ${{ github.workspace }}/ansible.cfg
+          # Esta variable fuerza el bypass del fingerprint sin importar lo que diga el .cfg
+          ANSIBLE_HOST_KEY_CHECKING: "False"
         run: |
+          if [ ! -s ~/.ssh/id_rsa ]; then
+            echo "💥 ERROR CRÍTICO: El fichero id_rsa no existe o está vacío."
+            exit 1
+          fi
+          
+          echo "✅ Clave verificada. Lanzando Ansible..."
           ansible-playbook -i ansible-web/host.ini ansible-web/tasks/main.yml --private-key ~/.ssh/id_rsa
