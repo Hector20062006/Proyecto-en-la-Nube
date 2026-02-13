@@ -46,9 +46,9 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
 
       - name: Ejecutar Ansible
-        # Candado 1: GitHub Actions no arrancará esto si el paso anterior no devolvió un "éxito"
         if: steps.config_clave_ssh.outcome == 'success' 
         env:
-          ANSIBLE_HOST_KEY_CHECKING: "False"
+          # Obligamos a Ansible a leer este fichero de configuración específico
+          ANSIBLE_CONFIG: ${{ github.workspace }}/ansible.cfg
         run: |
-          ansible-playbook ec2 ansible-web/tasks/main.yml --private-key ~/.ssh/id_rsa
+          ansible-playbook -i ansible-web/host.ini ansible-web/tasks/main.yml --private-key ~/.ssh/id_rsa
