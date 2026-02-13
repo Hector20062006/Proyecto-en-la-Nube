@@ -19,4 +19,6 @@
         run: |
           # Le indicamos explícitamente a Ansible qué fichero de clave usar
           ansible-playbook -i ansible-web/host.ini ansible-web/tasks/main.yml --private-key ~/.ssh/id_rsa
+        depends-on: Configurar clave SSH
+        
 
