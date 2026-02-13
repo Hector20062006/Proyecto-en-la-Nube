@@ -1,4 +1,4 @@
-- name: Ejecutar tareas en local
+- name: Administrando Docker
   hosts: ec2
   become: true
   gather_facts: true
