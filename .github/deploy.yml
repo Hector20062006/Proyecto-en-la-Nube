@@ -29,12 +29,11 @@ jobs:
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.ANSIBLE_PRIVATE_KEY }}
-
       - name: Ejecutar Ansible
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
         run: |
-          ansible-playbook ansible-web/tasks/main.yml
+          ansible-playbook -i ansible-web/host.ini ansible-web/tasks/main.yml
 
 
 
