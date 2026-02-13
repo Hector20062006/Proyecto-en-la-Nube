@@ -1,50 +1,22 @@
-name: Docker Build & Publish
-
-on:
-  push:
-    branches: ["main"]
-
-jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout del código
-        uses: actions/checkout@v4
-
-      - name: Login en Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_TOKEN }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Install ansible
+- name: Install ansible
         run: |
           sudo apt-get update
           sudo apt-get install -y ansible openssh-client
 
-      - name: Clean default SSH keys
+      # Sustituimos el agente por la creación manual y controlada del fichero
+      - name: Configurar clave SSH
         run: |
-          rm -f ~/.ssh/id_rsa ~/.ssh/id_rsa.pub || true
-
-      - name: Start SSH agent and add key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.ANSIBLE_PRIVATE_KEY }}
-
-      - name: Debug SSH agent
-        run: |
-          ssh-add -l
+          mkdir -p ~/.ssh
+          # Las comillas dobles aquí son vitales para mantener los saltos de línea
+          echo "${{ secrets.ANSIBLE_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
 
       - name: Ejecutar Ansible
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
-          ANSIBLE_SSH_ARGS: "-o IdentitiesOnly=yes -o PreferredAuthentications=publickey"
+          # Quitamos IdentitiesOnly, o si lo dejamos, Ansible ya sabrá qué fichero usar por defecto
+          ANSIBLE_SSH_ARGS: "-o PreferredAuthentications=publickey"
         run: |
-          ansible-playbook -i ansible-web/host.ini ansible-web/instalar-docker.yml
-
-
+          # Le indicamos explícitamente a Ansible qué fichero de clave usar
+          ansible-playbook -i ansible-web/host.ini ansible-web/tasks/main.yml --private-key ~/.ssh/id_rsa
 
