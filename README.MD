@@ -20,10 +20,3 @@ Infraestructura en AWS:
   - ECR_REPOSITORY (p.ej. cloud-web-ldap)
   - TF_STATE_BUCKET (si usas backend remoto opcional)
 
-## 1) Terraform (infra)
-```bash
-cd terraform
-terraform init
-terraform apply
-```
-
