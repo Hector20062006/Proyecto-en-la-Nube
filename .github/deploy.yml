@@ -34,7 +34,7 @@ jobs:
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
         run: |
-          ansible-playbook -i ansible-web/host.ini ansible-web/tasks/main.yml
+          ansible-playbook ansible-web/tasks/main.yml
 
 
 
