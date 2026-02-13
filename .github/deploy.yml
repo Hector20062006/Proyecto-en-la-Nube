@@ -25,16 +25,16 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ansible openssh-client
 
-      - name: Configure SSH key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.ANSIBLE_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+      - name: Start SSH agent and add key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.ANSIBLE_PRIVATE_KEY }}
 
       - name: Ejecutar Ansible
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
         run: |
-          ansible-playbook -i ansible-web/host.ini ansible-web/tasks/main.yml --private-key ~/.ssh/id_rsa
+          ansible-playbook -i ansible-web/host.ini ansible-web/tasks/main.yml
+
 
 
