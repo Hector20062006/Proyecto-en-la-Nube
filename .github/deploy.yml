@@ -19,3 +19,12 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+      
+      - name: Install ansible
+        run: |
+          sudo apt update
+          sudo apt install -y ansible
+      
+      - name: Ejecutar Ansible
+        run: ansible-playbook /tasks/main.yml --private-key ${{secrets.ANSIBLE_PRIVATE_KEY }}
+

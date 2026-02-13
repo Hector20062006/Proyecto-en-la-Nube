@@ -1,0 +1,51 @@
+name: Ansible Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'ansible-web/**'
+      - '.github/workflows/ansible-deploy.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible
+
+      - name: Configure SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Build inventory
+        env:
+          INVENTORY_CONTENT: ${{ secrets.ANSIBLE_INVENTORY }}
+        run: |
+          if [ -n "$INVENTORY_CONTENT" ]; then
+            printf '%s\n' "$INVENTORY_CONTENT" > ansible-web/host.ini
+          fi
+
+      - name: Run playbook
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+        run: |
+          ansible-playbook -i ansible-web/host.ini ansible-web/tasks/main.yml
