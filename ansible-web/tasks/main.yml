@@ -55,6 +55,7 @@
       loop:
         - /opt/webstack
         - /opt/webstack/apache
+        - /opt/webstack/apache/sites-enabled
         - /opt/webstack/apps
         - /opt/webstack/prometheus
 
