@@ -37,22 +37,7 @@ El sistema utiliza una arquitectura de microservicios contenerizados sobre insta
     - **Prometheus** recolecta métricas cada 15s.
     - **Grafana** visualiza el estado del sistema.
 
-```mermaid
-graph TD
-    User((Internet)) -->|HTTPS:443| Apache[Apache Reverse Proxy]
-    
-    subgraph "Docker Stack /opt/webstack"
-        Apache -->|Static Files| HTML[Volumen: Frontend]
-        Apache -->|FastCGI:9000| PHP[PHP 8.3 FPM]
-        Apache -.->|LDAPS:636| LDAP[Servidor LDAP Externo]
-        
-        Prometheus[Prometheus] -->|Scrape| Apache
-        Prometheus -->|Scrape| NodeExp[Node Exporter]
-        Prometheus -->|Scrape| cAdvisor[cAdvisor]
-        
-        Grafana[Grafana] -->|Query:9090| Prometheus
-    end
-```
+
 
 ---
 
@@ -158,5 +143,30 @@ Una vez completado el pipeline y esperando unos minutos para el arranque:
 | **Prometheus** | `http://<IP-SERVIDOR>:9090` | Motor de métricas (Raw Data). |
 
 > **Nota**: Sustituye `https://tu-dominio.com` por el dominio configurado en `ansible-web/vars/main.yml`.
+
+---
+
+## 🔐 Despliegue de LDAP (Manual)
+
+Para el servidor de autenticación centralizada (LDAP), se utiliza un despliegue manual aislado:
+
+1.  **Copiar Archivos**: Transfiere la carpeta `ldap/` a la máquina destino.
+2.  **Ejecutar Script de Configuración**:
+    ```bash
+    cd ldap
+    chmod +x setup.sh
+    ./setup.sh
+    ```
+
+Este script automatiza:
+*   Creación de certificados SSL (`ldap.hector.local`).
+*   Despliegue del contenedor OpenLDAP.
+*   **Carga de Datos Iniciales**: Importa automáticamente la estructura definida en `bootstrap/data.ldif`.
+
+**Credenciales por Defecto:**
+*   **Admin DN**: `cn=admin,dc=hector,dc=local`
+*   **Password Admin**: `hector`
+*   **Usuario de Prueba**: `hector` / `hector`
+
 ---
 **Proyecto Cloud Computing** | Desarrollado con ❤️ y Automatización.
