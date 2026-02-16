@@ -58,6 +58,10 @@
         AuthLDAPBindDN "{{ ldap_bind_dn }}"
         AuthLDAPBindPassword "{{ ldap_bind_pw }}"
 
+        # Configuración para posixGroup (memberUid no es un DN completo)
+        AuthLDAPGroupAttribute memberUid
+        AuthLDAPGroupAttributeIsDN off
+
         # Solo miembros del grupo admins
         Require ldap-group {{ ldap_admins_group_dn }}
 
