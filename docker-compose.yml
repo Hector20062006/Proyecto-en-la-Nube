@@ -10,7 +10,6 @@ services:
     volumes:
       - ./apache/sites-enabled:/etc/apache2/sites-enabled:ro
       - ./apache/conf-enabled:/etc/apache2/conf-enabled:ro
-      - ./apache/ssl:/etc/apache2/ssl:ro
       - ./apps/frontend:/var/www/frontend:ro
       - ./apps/phpapp:/var/www/phpapp:ro
       - ./apache/ca:/usr/local/share/ca-certificates/custom:ro

@@ -7,6 +7,8 @@ RUN apt-get update && apt-get install -y \
   ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
+COPY ssl/ /etc/apache2/ssl/
+
 RUN a2enmod \
   ssl headers rewrite \
   proxy proxy_http proxy_fcgi setenvif \
