@@ -4,7 +4,6 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y \
   apache2 apache2-utils \
-  libapache2-mod-authnz-ldap \
   ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
@@ -15,6 +14,6 @@ RUN a2enmod \
   && a2dismod status
 
 RUN ln -sf /proc/1/fd/1 /var/log/apache2/access.log \
- && ln -sf /proc/1/fd/2 /var/log/apache2/error.log
+  && ln -sf /proc/1/fd/2 /var/log/apache2/error.log
 
 CMD ["apachectl", "-D", "FOREGROUND"]
