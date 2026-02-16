@@ -95,9 +95,9 @@
       register: compose_pull
       changed_when: "'Downloaded' in compose_pull.stdout"
 
-    - name: Construir imágenes (Build)
+    - name: Construir imágenes (Force Rebuild)
       ansible.builtin.command:
-        cmd: docker compose build
+        cmd: docker compose build --no-cache
         chdir: /opt/webstack
       register: compose_build
       changed_when: "'Building' in compose_build.stdout"
