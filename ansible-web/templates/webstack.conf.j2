@@ -2,6 +2,7 @@
 
 <VirtualHost *:80>
     ServerName {{ domain }}
+
     # Redirigir todo el tráfico HTTP a HTTPS
     RewriteEngine On
     RewriteCond %{HTTPS} off
@@ -26,44 +27,44 @@
     DocumentRoot /var/www/frontend
     DirectoryIndex index.php index.html
 
-    # Configuración para el Frontend estático
+    # Frontend estático
     <Directory /var/www/frontend>
         Require all granted
         Options -Indexes
         AllowOverride All
     </Directory>
 
-    # Configuración para la aplicación PHP
+    # Aplicación PHP (solo aquí aplicamos el handler FPM)
     Alias /phpapp /var/www/phpapp
     <Directory /var/www/phpapp>
         Require all granted
         Options -Indexes
         AllowOverride All
-    </Directory>
-    
-    <FilesMatch \.php$>
-        SetHandler "proxy:fcgi://php:9000"
-    </FilesMatch>
 
-    # Configuración de Admin (Protegido por LDAP)
+        <FilesMatch \.php$>
+            SetHandler "proxy:fcgi://php:9000"
+        </FilesMatch>
+    </Directory>
+
+    # Admin protegido por LDAP
     Alias /admin /var/www/frontend/admin
     <Directory /var/www/frontend/admin>
         AuthType Basic
         AuthName "LDAP Login"
         AuthBasicProvider ldap
 
-        # Configuración LDAP
+        # LDAP
         AuthLDAPURL "{{ ldap_url }}"
         AuthLDAPBindDN "{{ ldap_bind_dn }}"
         AuthLDAPBindPassword "{{ ldap_bind_pw }}"
-        
-        # Requerir grupo específico
+
+        # Solo miembros del grupo admins
         Require ldap-group {{ ldap_admins_group_dn }}
 
         Options -Indexes
     </Directory>
 
-    # Logs
     ErrorLog /var/log/apache2/error.log
     CustomLog /var/log/apache2/access.log combined
 </VirtualHost>
+

@@ -13,6 +13,7 @@ changetype: add
 objectClass: posixGroup
 cn: admins
 gidNumber: 5000
+memberUid: hector
 
 dn: uid=hector,ou=people,dc=hector,dc=local
 changetype: add
