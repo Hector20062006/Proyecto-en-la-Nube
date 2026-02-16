@@ -102,12 +102,26 @@
       register: compose_build
       changed_when: "'Building' in compose_build.stdout"
 
-    - name: Eliminar contenedores anteriores (Cleanup)
+    - name: Eliminar contenedores e imágenes anteriores (Deep Cleanup)
       ansible.builtin.command:
-        cmd: docker compose down --remove-orphans
+        cmd: docker compose down --rmi local --remove-orphans
         chdir: /opt/webstack
       register: compose_down
       changed_when: "'Removed' in compose_down.stdout"
+
+    - name: Descargar imágenes base (Pull)
+      ansible.builtin.command:
+        cmd: docker compose pull
+        chdir: /opt/webstack
+      register: compose_pull
+      changed_when: "'Downloaded' in compose_pull.stdout"
+
+    - name: Construir imágenes (Force Rebuild)
+      ansible.builtin.command:
+        cmd: docker compose build --no-cache
+        chdir: /opt/webstack
+      register: compose_build
+      changed_when: "'Building' in compose_build.stdout"
 
     - name: Levantar contenedores (Up)
       ansible.builtin.command:
