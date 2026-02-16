@@ -1,16 +1,96 @@
-- name: Administrando Docker
+- name: Administrando Docker y desplegando WebStack (Apache)
   hosts: ec2
   become: true
   gather_facts: true
+
+  vars_files:
+    - ../vars/main.yml
+
   tasks:
-  - name: Comprobar si docker está instalado
-    ansible.builtin.command: docker --version
-    register: docker_check
-    changed_when: false
-    failed_when: false
+    - name: Comprobar si docker está instalado
+      ansible.builtin.command: docker --version
+      register: docker_check
+      changed_when: false
+      failed_when: false
 
-  - name: Instalar Docker si no está instalado
-    ansible.builtin.import_tasks: Instalar-docker.yml
-    when: docker_check.rc != 0
+    - name: Instalar Docker si no está instalado
+      ansible.builtin.import_tasks: Instalar-docker.yml
+      when: docker_check.rc != 0
 
-# A partir de aquí tus tareas normales:
+    - name: Comprobar si docker compose plugin está disponible
+      ansible.builtin.command: docker compose version
+      register: compose_check
+      changed_when: false
+      failed_when: false
+
+    - name: Instalar docker compose plugin si no está disponible
+      ansible.builtin.apt:
+        name: docker-compose-plugin
+        state: present
+        update_cache: true
+      when: compose_check.rc != 0
+
+    - name: Crear estructura de directorios en /opt/webstack
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - /opt/webstack
+        - /opt/webstack/apache
+        - /opt/webstack/apps
+        - /opt/webstack/prometheus
+
+    - name: Copiar docker-compose.yml
+      ansible.builtin.copy:
+        src: ../docker-compose.yml
+        dest: /opt/webstack/docker-compose.yml
+        mode: "0644"
+
+    - name: Copiar configuración de Apache
+      ansible.builtin.copy:
+        src: ../apache/
+        dest: /opt/webstack/apache/
+        mode: "0755"
+
+    - name: Copiar aplicaciones (apps)
+      ansible.builtin.copy:
+        src: ../apps/
+        dest: /opt/webstack/apps/
+        mode: "0755"
+
+    - name: Copiar configuración de Prometheus
+      ansible.builtin.copy:
+        src: ../prometheus/
+        dest: /opt/webstack/prometheus/
+        mode: "0644"
+
+    - name: Crear archivo .env del stack
+      ansible.builtin.copy:
+        dest: /opt/webstack/.env
+        mode: "0600"
+        content: |
+          DOMAIN={{ domain }}
+          LE_EMAIL={{ le_email }}
+          LDAP_URL={{ ldap_url }}
+          LDAP_BIND_DN={{ ldap_bind_dn }}
+          LDAP_BIND_PW={{ ldap_bind_pw }}
+          LDAP_ADMINS_GROUP_DN={{ ldap_admins_group_dn }}
+
+    - name: Levantar el stack (Apache + PHP + Monitorización)
+      ansible.builtin.command:
+        cmd: docker compose up -d --build
+        chdir: /opt/webstack
+      register: compose_up
+      changed_when: "'Started' in compose_up.stdout or 'Recreated' in compose_up.stdout or 'Built' in compose_up.stdout"
+      failed_when: compose_up.rc != 0
+
+    - name: Ver contenedores activos
+      ansible.builtin.command: docker ps
+      changed_when: false
+
+    - name: Esperar a HTTPS 443 (Apache)
+      ansible.builtin.wait_for:
+        port: 443
+        delay: 2
+        timeout: 60
