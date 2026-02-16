@@ -71,6 +71,12 @@
         dest: /opt/webstack/apache/
         mode: "0755"
 
+    - name: Copiar certificados SSL
+      ansible.builtin.copy:
+        src: ../../apache/ssl/
+        dest: /opt/webstack/apache/ssl/
+        mode: "0600"
+
     - name: Generar configuración de VirtualHost con Jinja2
       ansible.builtin.template:
         src: ../templates/webstack.conf.j2
