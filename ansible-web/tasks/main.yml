@@ -145,6 +145,14 @@
       register: compose_up
       changed_when: "'Started' in compose_up.stdout or 'Recreated' in compose_up.stdout"
 
+    - name: Actualizar certificados CA en el contenedor Apache
+      ansible.builtin.command: docker exec apache update-ca-certificates
+      changed_when: false
+
+    - name: Recargar configuración de Apache
+      ansible.builtin.command: docker exec apache apachectl -k graceful
+      changed_when: false
+
     - name: Ver contenedores activos
       ansible.builtin.command: docker ps
       changed_when: false
