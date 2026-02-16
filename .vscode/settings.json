@@ -1,8 +1,0 @@
-{
-    "python-envs.defaultEnvManager": "ms-python.python:system",
-    "python-envs.pythonProjects": [],
-    "ansible.python.interpreterPath": "/bin/python3",
-    "yaml.schemas": {
-        "https://raw.githubusercontent.com/ansible/ansible-lint/main/src/ansiblelint/schemas/ansible.json#/$defs/tasks": "file:///media/hector/KINGSTON/2%20ASIR/ADS/Proyecto%20en%20la%20Nube/ansible-web/tasks/main.yml"
-    }
-}
