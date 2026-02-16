@@ -15,7 +15,7 @@ services:
     volumes:
       - ./data/database:/var/lib/ldap
       - ./data/config:/etc/ldap/slapd.d
-      - ./certs:/container/service/slapd/assets/certs:ro
-      - ./bootstrap:/container/service/slapd/assets/config/bootstrap/ldif/custom:ro
+      - ./certs:/container/service/slapd/assets/certs
+      - ./bootstrap:/container/service/slapd/assets/config/bootstrap/ldif/custom
     ports:
       - "636:636"
