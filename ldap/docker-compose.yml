@@ -7,11 +7,15 @@ services:
       LDAP_ORGANISATION: "hector"
       LDAP_DOMAIN: "hector.local"
       LDAP_ADMIN_PASSWORD: "hector"
+
       LDAP_TLS: "true"
       LDAP_TLS_CRT_FILENAME: "fullchain.pem"
       LDAP_TLS_KEY_FILENAME: "privkey.pem"
       LDAP_TLS_CA_CRT_FILENAME: "chain.pem"
       LDAP_TLS_VERIFY_CLIENT: "never"
+
+      LDAP_REMOVE_CONFIG_AFTER_SETUP: "false"
+      KEEP_EXISTING_CONFIG: "true"
     volumes:
       - ./data/database:/var/lib/ldap
       - ./data/config:/etc/ldap/slapd.d
@@ -19,3 +23,4 @@ services:
       - ./bootstrap:/container/service/slapd/assets/config/bootstrap/ldif/custom
     ports:
       - "636:636"
+

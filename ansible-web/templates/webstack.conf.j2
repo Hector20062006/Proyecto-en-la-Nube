@@ -24,6 +24,7 @@
     Header set X-Served-By "apache-docker"
 
     DocumentRoot /var/www/frontend
+    DirectoryIndex index.php index.html
 
     # Configuración para el Frontend estático
     <Directory /var/www/frontend>
