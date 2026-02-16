@@ -71,11 +71,22 @@
         dest: /opt/webstack/apache/
         mode: "0755"
 
-    - name: Copiar certificados SSL
-      ansible.builtin.copy:
-        src: ../../apache/ssl/
-        dest: /opt/webstack/apache/ssl/
-        mode: "0600"
+    - name: Crear directorio SSL en remoto
+      ansible.builtin.file:
+        path: /opt/webstack/apache/ssl
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Generar certificado autofirmado si no existe
+      ansible.builtin.command: >
+        openssl req -x509 -nodes -days 365 -newkey rsa:2048
+        -keyout /opt/webstack/apache/ssl/privkey.pem
+        -out /opt/webstack/apache/ssl/fullchain.pem
+        -subj "/CN={{ domain | default('localhost') }}"
+      args:
+        creates: /opt/webstack/apache/ssl/fullchain.pem
 
     - name: Generar configuración de VirtualHost con Jinja2
       ansible.builtin.template:
