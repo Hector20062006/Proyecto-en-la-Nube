@@ -1,80 +1,140 @@
-# Proyecto Cloud Web + LDAP (LDAPS) + Monitorización
+# ☁️ Proyecto Cloud de Despliegue Automatizado (Web + LDAP + Monitorización)
 
-Este proyecto define y despliega una infraestructura completa en AWS, gestionando la configuración de los servidores con **Ansible** y **Docker Compose**, y automatizando el despliegue mediante **GitHub Actions**.
+Este proyecto implementa una infraestructura robusta y escalable en **AWS**, utilizando las mejores prácticas de **DevOps**. Combina **Infraestructura como Código (IaC)**, gestión de configuración y contenedores para ofrecer un servicio web seguro y monitorizado.
 
-## 📋 Descripción
+---
 
-El objetivo es proporcionar un stack web seguro y monitorizado que incluye:
+## 📖 Tabla de Contenidos
 
-- **Servidor Web:** Apache (con terminación SSL y módulos de seguridad).
-- **Aplicaciones:** 
-  - Frontend (HTML estático).
-  - Backend (PHP 8.3-FPM).
-- **Seguridad:** 
-  - Integración con **LDAP/LDAPS** para proteger rutas de administración.
-  - Certificados SSL autofirmados (listo para Let's Encrypt).
-- **Monitorización:** Stack completo con **Prometheus**, **Grafana**, **Node Exporter** y **cAdvisor**.
-- **Infraestructrua como Código:** Despliegue automatizado via Ansible.
+1. [Arquitectura del Sistema](#-arquitectura-del-sistema)
+2. [Tecnologías Utilizadas](#-tecnologías-utilizadas)
+3. [Estructura del Repositorio](#-estructura-del-repositorio)
+4. [Requisitos Previos](#-requisitos-previos)
+5. [Guía de Despliegue Automático](#-guía-de-despliegue-automático-github-actions)
+6. [Guía de Despliegue Manual](#-guía-de-despliegue-manual)
+7. [Solución de Problemas (Troubleshooting)](#-solución-de-problemas)
 
-## 🏗️ Arquitectura del Repositorio
+---
 
-| Directorio/Archivo | Descripción |
-|-------------------|-------------|
-| `.github/workflows/` | Pipeline de CI/CD para desplegar en AWS al hacer push a `main`. |
-| `ansible-web/` | Playbooks de Ansible y configuración de inventario (`host.ini`). |
-| `apache/` | Configuración de Apache, VirtualHosts y certificados SSL. |
-| `apps/` | Código fuente de las aplicaciones (Frontend y PHP). |
-| `prometheus/` | Configuración de Prometheus. |
-| `docker-compose.yml` | Definición de todos los servicios del stack. |
-| `Infraestructura/` | (Opcional) Código Terraform para provisionar EC2/VPC. |
+## 🏗 Arquitectura del Sistema
+
+El sistema está diseñado para ser modular. El tráfico fluye de la siguiente manera:
+
+1.  **Usuario** accede vía HTTPS (Puerto 443).
+2.  **Apache** (Contenedor) recibe la petición.
+    - Si es contenido estático -> Sirve desde `./apps/frontend`.
+    - Si es PHP -> Pasa la petición a **PHP-FPM** (Contenedor) vía protocolo FastCGI.
+    - Si es `/admin` -> Solicita autenticación contra **LDAP**.
+3.  **Monitorización**:
+    - **Prometheus** recolecta métricas de Apache, contenedores (cAdvisor) y del nodo (Node Exporter).
+    - **Grafana** visualiza estas métricas en cuadros de mando.
+
+```mermaid
+graph TD
+    User((Usuario)) -->|HTTPS/443| Apache[Apache Reverse Proxy]
+    Apache -->|Static| HTML[Frontend Estático]
+    Apache -->|FastCGI| PHP[PHP-FPM Backend]
+    Apache -.->|Auth| LDAP[Servidor LDAP]
+    
+    Prometheus[Prometheus] -->|Scrape| Apache
+    Prometheus -->|Scrape| Node[Node Exporter]
+    Prometheus -->|Scrape| cAdvisor[cAdvisor]
+    
+    Grafana[Grafana] -->|Query| Prometheus
+```
+
+---
+
+## 🛠 Tecnologías Utilizadas
+
+- **AWS EC2**: Servidores virtuales donde se ejecuta el stack.
+- **Docker & Docker Compose**: Orquestación de contenedores. Permite levantar todo el entorno con un solo comando.
+- **Ansible**: Automatización de la configuración. Se conecta a los servidores, instala Docker, copia los archivos y levanta los servicios.
+- **GitHub Actions**: CI/CD. Detecta cambios en el código y lanza Ansible automáticamente.
+- **Apache + PHP-FPM**: Stack web clásico pero desacoplado en microservicios.
+- **Prometheus + Grafana**: Stack estándar de la industria para observabilidad.
+
+---
+
+## 📂 Estructura del Repositorio
+
+Entender dónde está cada archivo es clave para operar el sistema:
+
+| Ruta | Descripción |
+|------|-------------|
+| `.github/workflows/ansible-deploy.yml` | **Pipeline CI/CD**. Define los pasos para conectar a AWS y ejecutar Ansible. |
+| `ansible-web/` | **Corazón de la Automatización**. |
+| ├── `host.ini` | Inventario (IPs de tus servidores). |
+| ├── `tasks/main.yml` | Pasos del despliegue (Copiar archivos, Pull, Build, Up). |
+| └── `templates/env.j2` | Plantilla para generar el archivo `.env` con secretos. |
+| `apache/` | **Configuración Web**. Vhosts y certificados SSL. |
+| `apps/` | **Código Fuente**. Aquí pones tu HTML y PHP. |
+| `docker-compose.yml` | **Orquestador**. Define qué contenedores se levantan y cómo se comunican. |
+
+---
 
 ## 🚀 Requisitos Previos
 
-1. **Infraestructrua AWS:** Instancias EC2 corriendo (Ubuntu 24.04 recomendado) con los puertos 80, 443, 3000 y 9090 abiertos (según necesidad).
-2. **GitHub Secrets:** Debes configurar los siguientes secretos en tu repositorio para que la Action funcione:
-   - `ANSIBLE_PRIVATE_KEY`: La clave privada SSH (`.pem`) para conectar a tus servidores.
+Antes de empezar, asegúrate de tener:
 
-## ⚙️ Despliegue Automático (GitHub Actions)
-
-Cada vez que haces un **push** a la rama `main`, se ejecuta el flujo de trabajo:
-
-1. **Instalación de Dependencias:** Instala Ansible en el runner de GitHub.
-2. **Configuración SSH:** Configura la clave privada desde los secretos.
-3. **Ejecución del Playbook:** Lanza `ansible-playbook` contra el inventario definido en `ansible-web/host.ini`.
-   - Copia los archivos del proyecto a `/opt/webstack` en el servidor.
-   - Levanta o actualiza los contenedores con `docker compose up -d --build`.
-
-## 🛠️ Despliegue Manual
-
-Si prefieres ejecutarlo desde tu máquina local:
-
-1. Asegúrate de tener **Ansible** instalado.
-2. Configura tu clave SSH (ej. `clave.pem`).
-3. Ejecuta:
-
-```bash
-export ANSIBLE_HOST_KEY_CHECKING=False
-ansible-playbook -i ansible-web/host.ini ansible-web/tasks/main.yml --private-key /ruta/a/tu/clave.pem
-```
-
-## 📊 Servicios y Puertos
-
-| Servicio | Puerto | Descripción |
-|----------|--------|-------------|
-| **Web (HTTPS)** | 443 | Acceso a la aplicación principal y `/admin`. |
-| **Web (HTTP)** | 80 | Redirecciona automáticamente a HTTPS. |
-| **Grafana** | 3000 | Dashboards de monitorización (Usuario: `admin` / Password: `admin`). |
-| **Prometheus** | 9090 | Servidor de métricas. |
-| **cAdvisor** | 9323 | Métricas de contenedores. |
-
-## 🔐 Variables de Entorno y Configuración
-
-El despliegue genera automáticamente un archivo `.env` en el servidor con las variables definidas en `ansible-web/vars/main.yml`.
-
-Variables principales:
-- `domain`: Dominio del sitio web.
-- `ldap_url`: URL del servidor LDAP (ej. `ldaps://...`).
-- `ldap_bind_dn`: Usuario para conectar al LDAP.
+1.  **Instancias AWS**: Servidores Ubuntu 24.04 con acceso SSH.
+2.  **Puertos Abiertos (Security Groups)**:
+    - `22` (SSH) - Solo para admin/GitHub Actions.
+    - `80` (HTTP) y `443` (HTTPS) - Acceso Web.
+    - `3000` (Grafana) y `9090` (Prometheus) - Monitorización.
+3.  **Secretos en GitHub**:
+    Ve a `Settings > Secrets and variables > Actions` y añade:
+    - `ANSIBLE_PRIVATE_KEY`: El contenido de tu archivo `.pem`.
 
 ---
-**Nota:** El proyecto incluye certificados SSL autofirmados generados automáticamente para pruebas. Para producción, reemplaza los archivos en `apache/ssl/` con certificados válidos.
+
+## ⚙ Guía de Despliegue Automático (GitHub Actions)
+
+Es el método recomendado.
+
+1.  Modifica cualquier archivo (ej. `apps/frontend/index.html`).
+2.  Haz un **Commit** y **Push** a la rama `main`.
+3.  Ve a la pestaña **Actions** en GitHub.
+4.  Verás un flujo de trabajo ejecutándose que:
+    - Instala Ansible.
+    - Se conecta a tus servidores EC2.
+    - Actualiza el código y reinicia los contenedores.
+
+---
+
+## 🛠 Guía de Despliegue Manual
+
+Útil para depuración o si no quieres usar GitHub Actions.
+
+1.  Instala Ansible: `sudo apt install ansible`.
+2.  Configura tu clave SSH (ej. `clave.pem`).
+3.  Ejecuta el playbook desde la raíz del proyecto:
+
+```bash
+# Deshabilita la comprobación estricta de host (opcional, para evitar "yes/no")
+export ANSIBLE_HOST_KEY_CHECKING=False
+
+# Ejecuta el playbook
+ansible-playbook -i ansible-web/host.ini ansible-web/tasks/main.yml \
+  --private-key /ruta/a/tu/clave.pem \
+  --extra-vars "domain=midominio.com le_email=admin@test.com"
+```
+
+---
+
+## ❓ Solución de Problemas
+
+### Error: `AnsibleActionFail: Could not find or access ...`
+- **Causa**: Ansible no encuentra los archivos locales para copiarlos al servidor.
+- **Solución**: Asegúrate de que las rutas en `main.yml` usan `../../` para referenciar la raíz del proyecto.
+
+### Error: `Docker Compose ... non-zero return code`
+- **Causa**: Timeout al descargar imágenes o error en la construcción.
+- **Solución**: El playbook ahora divide el proceso en `pull`, `build` y `up` para identificar dónde falla. Revisa los logs de la Action para ver cuál paso falló.
+
+### Apache no inicia (CrashLoopBackOff)
+- **Causa**: Faltan certificados SSL.
+- **Solución**: Asegúrate de que existen `apache/ssl/fullchain.pem` y `apache/ssl/privkey.pem`. Si no, genéralos con `openssl` (ver pasos anteriores).
+
+---
+Autor: Héctor | Proyecto Cloud Computing

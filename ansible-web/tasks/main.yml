@@ -71,13 +71,26 @@
         dest: /opt/webstack/.env
         mode: "0600"
 
-    - name: Levantar el stack (Apache + PHP + Monitorización)
+    - name: Descargar imágenes (Pull)
       ansible.builtin.command:
-        cmd: docker compose up -d --build
+        cmd: docker compose pull
+        chdir: /opt/webstack
+      register: compose_pull
+      changed_when: "'Downloaded' in compose_pull.stdout"
+
+    - name: Construir imágenes (Build)
+      ansible.builtin.command:
+        cmd: docker compose build
+        chdir: /opt/webstack
+      register: compose_build
+      changed_when: "'Building' in compose_build.stdout"
+
+    - name: Levantar contenedores (Up)
+      ansible.builtin.command:
+        cmd: docker compose up -d
         chdir: /opt/webstack
       register: compose_up
-      changed_when: "'Started' in compose_up.stdout or 'Recreated' in compose_up.stdout or 'Built' in compose_up.stdout"
-      failed_when: compose_up.rc != 0
+      changed_when: "'Started' in compose_up.stdout or 'Recreated' in compose_up.stdout"
 
     - name: Ver contenedores activos
       ansible.builtin.command: docker ps
