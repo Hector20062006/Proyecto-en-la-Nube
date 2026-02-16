@@ -1,84 +1,80 @@
 # Proyecto Cloud Web + LDAP (LDAPS) + Monitorización
 
-Este proyecto define y despliega una infraestructura completa en AWS utilizando **Terraform**, gestiona la configuración de los servidores con **Ansible** y **Docker**, y automatiza el despliegue mediante pipelines de **GitHub Actions**.
+Este proyecto define y despliega una infraestructura completa en AWS, gestionando la configuración de los servidores con **Ansible** y **Docker Compose**, y automatizando el despliegue mediante **GitHub Actions**.
 
-## 📋 Descripción del Proyecto
+## 📋 Descripción
 
-El objetivo es crear un entorno seguro y escalable que incluye:
+El objetivo es proporcionar un stack web seguro y monitorizado que incluye:
 
-- **Infraestructura AWS (Terraform):**
-  - 2 VPCs conectadas mediante Peering.
-  - Instancias EC2 para servidores Web y LDAP.
-  - Subredes públicas y privadas, Tablas de enrutamiento e Internet Gateways.
-- **Servicios (Docker + Ansible):**
-  - **Servidor Web:** Apache + PHP + Tomcat.
-  - **Directorio:** OpenLDAP con soporte LDAPS (SSL/TLS).
-  - **Monitorización:** Prometheus + Grafana + Exporters.
-  - Autenticación centralizada vía LDAP para rutas protegidas.
-- **Automatización (GitHub Actions):**
-  - Despliegue automático de configuración y contenedores al hacer push a la rama `main`.
+- **Servidor Web:** Apache (con terminación SSL y módulos de seguridad).
+- **Aplicaciones:** 
+  - Frontend (HTML estático).
+  - Backend (PHP 8.3-FPM).
+- **Seguridad:** 
+  - Integración con **LDAP/LDAPS** para proteger rutas de administración.
+  - Certificados SSL autofirmados (listo para Let's Encrypt).
+- **Monitorización:** Stack completo con **Prometheus**, **Grafana**, **Node Exporter** y **cAdvisor**.
+- **Infraestructrua como Código:** Despliegue automatizado via Ansible.
 
-## 🏗️ Arquitectura
+## 🏗️ Arquitectura del Repositorio
 
-La infraestructura se provisiona mediante código (IaC) en la carpeta `Infraestructura/`.
-
-- **VPC 1 (Web):** Aloja los servidores frontales accesibles desde internet.
-- **VPC 2 (Backend/LDAP):** Aloja servicios internos como el directorio LDAP.
-- **Peering:** Permite la comunicación privada y segura entre ambas redes.
+| Directorio/Archivo | Descripción |
+|-------------------|-------------|
+| `.github/workflows/` | Pipeline de CI/CD para desplegar en AWS al hacer push a `main`. |
+| `ansible-web/` | Playbooks de Ansible y configuración de inventario (`host.ini`). |
+| `apache/` | Configuración de Apache, VirtualHosts y certificados SSL. |
+| `apps/` | Código fuente de las aplicaciones (Frontend y PHP). |
+| `prometheus/` | Configuración de Prometheus. |
+| `docker-compose.yml` | Definición de todos los servicios del stack. |
+| `Infraestructura/` | (Opcional) Código Terraform para provisionar EC2/VPC. |
 
 ## 🚀 Requisitos Previos
 
-Para desplegar este proyecto necesitas:
+1. **Infraestructrua AWS:** Instancias EC2 corriendo (Ubuntu 24.04 recomendado) con los puertos 80, 443, 3000 y 9090 abiertos (según necesidad).
+2. **GitHub Secrets:** Debes configurar los siguientes secretos en tu repositorio para que la Action funcione:
+   - `ANSIBLE_PRIVATE_KEY`: La clave privada SSH (`.pem`) para conectar a tus servidores.
 
-1. **Cuenta de AWS:** Credenciales de acceso programático (Access Key y Secret Key).
-2. **Terraform:** Instalado localmente para el provisionamiento inicial de la infraestructura.
-3. **Dominio:** Un nombre de dominio gestionado (preferiblemente en Route53) para la generación de certificados SSL.
-4. **GitHub Secrets:** Configurados en el repositorio para que funcionen las Actions.
+## ⚙️ Despliegue Automático (GitHub Actions)
 
-## ⚙️ Configuración y Despliegue
+Cada vez que haces un **push** a la rama `main`, se ejecuta el flujo de trabajo:
 
-### 1. Infraestructura (Terraform)
+1. **Instalación de Dependencias:** Instala Ansible en el runner de GitHub.
+2. **Configuración SSH:** Configura la clave privada desde los secretos.
+3. **Ejecución del Playbook:** Lanza `ansible-playbook` contra el inventario definido en `ansible-web/host.ini`.
+   - Copia los archivos del proyecto a `/opt/webstack` en el servidor.
+   - Levanta o actualiza los contenedores con `docker compose up -d --build`.
 
-Navega a la carpeta `Infraestructura/` y configura tus variables en `terraform.tfvars` (o usa variables de entorno).
+## 🛠️ Despliegue Manual
+
+Si prefieres ejecutarlo desde tu máquina local:
+
+1. Asegúrate de tener **Ansible** instalado.
+2. Configura tu clave SSH (ej. `clave.pem`).
+3. Ejecuta:
 
 ```bash
-cd Infraestructura
-terraform init
-terraform plan
-terraform apply
+export ANSIBLE_HOST_KEY_CHECKING=False
+ansible-playbook -i ansible-web/host.ini ansible-web/tasks/main.yml --private-key /ruta/a/tu/clave.pem
 ```
 
-Esto creará los recursos en AWS. Asegúrate de tomar nota de las IPs públicas/privadas generadas.
+## 📊 Servicios y Puertos
 
-### 2. Configuración de Servidores (Ansible)
+| Servicio | Puerto | Descripción |
+|----------|--------|-------------|
+| **Web (HTTPS)** | 443 | Acceso a la aplicación principal y `/admin`. |
+| **Web (HTTP)** | 80 | Redirecciona automáticamente a HTTPS. |
+| **Grafana** | 3000 | Dashboards de monitorización (Usuario: `admin` / Password: `admin`). |
+| **Prometheus** | 9090 | Servidor de métricas. |
+| **cAdvisor** | 9323 | Métricas de contenedores. |
 
-La configuración de los servidores se gestiona con Ansible, ubicado en `ansible-web/`.
+## 🔐 Variables de Entorno y Configuración
 
-- **Roles:** Configuración modular para Docker, servicios web, etc.
-- **Inventario:** Define tus hosts en `ansible-web/host.ini`.
+El despliegue genera automáticamente un archivo `.env` en el servidor con las variables definidas en `ansible-web/vars/main.yml`.
 
-### 3. Automatización (GitHub Actions)
-
-El flujo de trabajo `.github/workflows/ansible-deploy.yml` se encarga de:
-
-1. Construir y subir imágenes de Docker (si aplica).
-2. Configurar el entorno de ejecución (instalar Ansible, SSH).
-3. Desplegar los playbooks de Ansible en las instancias EC2.
-
-#### Secretos Requeridos en GitHub:
-
-- `AWS_ACCESS_KEY_ID`: Tu ID de clave de acceso AWS.
-- `AWS_SECRET_ACCESS_KEY`: Tu clave secreta AWS.
-- `AWS_REGION`: Región de despliegue (ej: us-east-1).
-- `DOCKER_USERNAME`: Usuario de Docker Hub.
-- `DOCKER_TOKEN`: Token de acceso o contraseña de Docker Hub.
-- `ANSIBLE_PRIVATE_KEY`: La clave privada SSH (.pem) para acceder a las instancias EC2.
+Variables principales:
+- `domain`: Dominio del sitio web.
+- `ldap_url`: URL del servidor LDAP (ej. `ldaps://...`).
+- `ldap_bind_dn`: Usuario para conectar al LDAP.
 
 ---
-
-## 📂 Estructura del Repositorio
-
-- `.github/workflows/`: Pipelines de CI/CD.
-- `Infraestructura/`: Código Terraform (VPCs, Subnets, EC2, Security Groups).
-- `ansible-web/`: Playbooks, roles y variables de Ansible.
-- `README.MD`: Esta documentación.
+**Nota:** El proyecto incluye certificados SSL autofirmados generados automáticamente para pruebas. Para producción, reemplaza los archivos en `apache/ssl/` con certificados válidos.

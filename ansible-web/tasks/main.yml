@@ -43,39 +43,33 @@
 
     - name: Copiar docker-compose.yml
       ansible.builtin.copy:
-        src: ../docker-compose.yml
+        src: ../../docker-compose.yml
         dest: /opt/webstack/docker-compose.yml
         mode: "0644"
 
     - name: Copiar configuración de Apache
       ansible.builtin.copy:
-        src: ../apache/
+        src: ../../apache/
         dest: /opt/webstack/apache/
         mode: "0755"
 
     - name: Copiar aplicaciones (apps)
       ansible.builtin.copy:
-        src: ../apps/
+        src: ../../apps/
         dest: /opt/webstack/apps/
         mode: "0755"
 
     - name: Copiar configuración de Prometheus
       ansible.builtin.copy:
-        src: ../prometheus/
+        src: ../../prometheus/
         dest: /opt/webstack/prometheus/
         mode: "0644"
 
-    - name: Crear archivo .env del stack
-      ansible.builtin.copy:
+    - name: Crear archivo .env del stack desde plantilla
+      ansible.builtin.template:
+        src: ../templates/env.j2
         dest: /opt/webstack/.env
         mode: "0600"
-        content: |
-          DOMAIN={{ domain }}
-          LE_EMAIL={{ le_email }}
-          LDAP_URL={{ ldap_url }}
-          LDAP_BIND_DN={{ ldap_bind_dn }}
-          LDAP_BIND_PW={{ ldap_bind_pw }}
-          LDAP_ADMINS_GROUP_DN={{ ldap_admins_group_dn }}
 
     - name: Levantar el stack (Apache + PHP + Monitorización)
       ansible.builtin.command:
