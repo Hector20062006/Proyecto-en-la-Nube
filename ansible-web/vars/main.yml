@@ -4,7 +4,7 @@
 domain: "web1.tudominio.com"
 le_email: "tuemail@tudominio.com"
 
-ldap_url: "ldaps://10.20.2.10:636/ou=people,dc=example,dc=org?uid"
-ldap_bind_dn: "cn=admin,dc=example,dc=org"
-ldap_bind_pw: "CambiarEsto"
-ldap_admins_group_dn: "cn=admins,ou=groups,dc=example,dc=org"
+ldap_url: "ldaps://10.1.2.246:636/ou=people,dc=hector,dc=local?uid"
+ldap_bind_dn: "cn=admin,dc=hector,dc=local"
+ldap_bind_pw: "hector"
+ldap_admins_group_dn: "cn=admins,ou=groups,dc=hector,dc=local"

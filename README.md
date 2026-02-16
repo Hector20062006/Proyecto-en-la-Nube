@@ -144,6 +144,9 @@ Una vez completado el pipeline y esperando unos minutos para el arranque:
 
 > **Nota**: Sustituye `https://tu-dominio.com` por el dominio configurado en `ansible-web/vars/main.yml`.
 
+> **LDAP Config**: Asegúrate de que `ansible-web/vars/main.yml` apunta a la IP correcta del servidor LDAP (ej. `10.1.2.246`).
+
+
 ---
 
 ## 🔐 Despliegue de LDAP (Manual)
