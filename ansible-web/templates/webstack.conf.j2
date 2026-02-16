@@ -1,4 +1,5 @@
 # Configuración generada por Ansible
+LDAPVerifyServerCert Off
 
 <VirtualHost *:80>
     ServerName {{ domain }}
@@ -13,7 +14,7 @@
     ServerName {{ domain }}
 
     SSLEngine on
-    LDAPVerifyServerCert Off
+
     SSLCertificateFile /etc/apache2/ssl/fullchain.pem
     SSLCertificateKeyFile /etc/apache2/ssl/privkey.pem
 
