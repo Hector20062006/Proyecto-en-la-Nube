@@ -85,6 +85,13 @@
       register: compose_build
       changed_when: "'Building' in compose_build.stdout"
 
+    - name: Eliminar contenedores anteriores (Cleanup)
+      ansible.builtin.command:
+        cmd: docker compose down --remove-orphans
+        chdir: /opt/webstack
+      register: compose_down
+      changed_when: "'Removed' in compose_down.stdout"
+
     - name: Levantar contenedores (Up)
       ansible.builtin.command:
         cmd: docker compose up -d

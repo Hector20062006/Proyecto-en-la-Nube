@@ -139,3 +139,4 @@ ansible-playbook -i ansible-web/host.ini ansible-web/tasks/main.yml \
 ---
 Autor: Héctor | Proyecto Cloud Computing
 
+| 16/02/2026 | **Container Cleanup** | Añadido paso `docker compose down` para borrar contenedores previos antes del despliegue. |
