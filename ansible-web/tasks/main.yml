@@ -30,6 +30,23 @@
         update_cache: true
       when: compose_check.rc != 0
 
+    - name: Comprobar si existe despliegue anterior
+      ansible.builtin.stat:
+        path: /opt/webstack/docker-compose.yml
+      register: stack_exists
+
+    - name: Detener y eliminar contenedores/imágenes antiguos (Deep Cleanup)
+      ansible.builtin.command:
+        cmd: docker compose down --rmi local --volumes --remove-orphans
+        chdir: /opt/webstack
+      when: stack_exists.stat.exists
+      changed_when: true
+
+    - name: Eliminar directorio de despliegue completo
+      ansible.builtin.file:
+        path: /opt/webstack
+        state: absent
+
     - name: Crear estructura de directorios en /opt/webstack
       ansible.builtin.file:
         path: "{{ item }}"
@@ -51,17 +68,6 @@
       ansible.builtin.copy:
         src: ../../apache/
         dest: /opt/webstack/apache/
-        mode: "0755"
-
-    - name: Limpiar configuraciones antiguas de Apache
-      ansible.builtin.file:
-        path: /opt/webstack/apache/sites-enabled
-        state: absent
-
-    - name: Recrear directorio sites-enabled
-      ansible.builtin.file:
-        path: /opt/webstack/apache/sites-enabled
-        state: directory
         mode: "0755"
 
     - name: Generar configuración de VirtualHost con Jinja2
@@ -87,27 +93,6 @@
         src: ../templates/env.j2
         dest: /opt/webstack/.env
         mode: "0600"
-
-    - name: Descargar imágenes (Pull)
-      ansible.builtin.command:
-        cmd: docker compose pull
-        chdir: /opt/webstack
-      register: compose_pull
-      changed_when: "'Downloaded' in compose_pull.stdout"
-
-    - name: Construir imágenes (Force Rebuild)
-      ansible.builtin.command:
-        cmd: docker compose build --no-cache
-        chdir: /opt/webstack
-      register: compose_build
-      changed_when: "'Building' in compose_build.stdout"
-
-    - name: Eliminar contenedores e imágenes anteriores (Deep Cleanup)
-      ansible.builtin.command:
-        cmd: docker compose down --rmi local --remove-orphans
-        chdir: /opt/webstack
-      register: compose_down
-      changed_when: "'Removed' in compose_down.stdout"
 
     - name: Descargar imágenes base (Pull)
       ansible.builtin.command:
