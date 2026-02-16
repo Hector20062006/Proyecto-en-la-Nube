@@ -2,6 +2,8 @@
 
 Este proyecto implementa una infraestructura robusta y escalable en **AWS**, utilizando las mejores prácticas de **DevOps**. Combina **Infraestructura como Código (IaC)**, gestión de configuración y contenedores para ofrecer un servicio web seguro y monitorizado.
 
+El despliegue es **100% automatizado** mediante GitHub Actions, asegurando consistencia y rapidez en cada actualización.
+
 ---
 
 ## 📖 Tabla de Contenidos
@@ -10,132 +12,151 @@ Este proyecto implementa una infraestructura robusta y escalable en **AWS**, uti
 2. [Tecnologías Utilizadas](#-tecnologías-utilizadas)
 3. [Estructura del Repositorio](#-estructura-del-repositorio)
 4. [Requisitos Previos](#-requisitos-previos)
-5. [Guía de Despliegue Automático](#-guía-de-despliegue-automático-github-actions)
+5. [Flujo de Trabajo (CI/CD)](#-flujo-de-trabajo-cicd)
 6. [Guía de Despliegue Manual](#-guía-de-despliegue-manual)
-7. [Solución de Problemas (Troubleshooting)](#-solución-de-problemas)
+7. [Monitorización y Métricas](#-monitorización-y-métricas)
+8. [Solución de Problemas (Troubleshooting)](#-solución-de-problemas)
+9. [Registro de Cambios (Changelog)](#-registro-de-cambios-changelog)
 
 ---
 
 ## 🏗 Arquitectura del Sistema
 
-El sistema está diseñado para ser modular. El tráfico fluye de la siguiente manera:
+El sistema utiliza una arquitectura de microservicios contenerizados sobre instancias EC2.
 
-1.  **Usuario** accede vía HTTPS (Puerto 443).
-2.  **Apache** (Contenedor) recibe la petición.
-    - Si es contenido estático -> Sirve desde `./apps/frontend`.
-    - Si es PHP -> Pasa la petición a **PHP-FPM** (Contenedor) vía protocolo FastCGI.
-    - Si es `/admin` -> Solicita autenticación contra **LDAP**.
-3.  **Monitorización**:
-    - **Prometheus** recolecta métricas de Apache, contenedores (cAdvisor) y del nodo (Node Exporter).
-    - **Grafana** visualiza estas métricas en cuadros de mando.
+### Flujo de Tráfico
+
+1.  **HTTPS (443)**: Todo el tráfico de entrada llega a Apache.
+    - Se fuerza redirección automática de HTTP (80) a HTTPS (443).
+    - Se utiliza **Terminación SSL** en Apache con certificados generados.
+2.  **Enrutamiento**:
+    - **Frontend (/):** Sirve contenido estático HTML/JS desde un volumen Docker.
+    - **Backend (/phpapp):** Redirige peticiones `.php` al contenedor **PHP-FPM** vía protocolo FastCGI (puerto 9000).
+    - **Admin (/admin):** Integra autenticación **LDAP/LDAPS** para proteger el acceso.
+3.  **Observabilidad**:
+    - **Prometheus** recolecta métricas cada 15s.
+    - **Grafana** visualiza el estado del sistema.
 
 ```mermaid
 graph TD
-    User((Usuario)) -->|HTTPS/443| Apache[Apache Reverse Proxy]
-    Apache -->|Static| HTML[Frontend Estático]
-    Apache -->|FastCGI| PHP[PHP-FPM Backend]
-    Apache -.->|Auth| LDAP[Servidor LDAP]
+    User((Internet)) -->|HTTPS:443| Apache[Apache Reverse Proxy]
     
-    Prometheus[Prometheus] -->|Scrape| Apache
-    Prometheus -->|Scrape| Node[Node Exporter]
-    Prometheus -->|Scrape| cAdvisor[cAdvisor]
-    
-    Grafana[Grafana] -->|Query| Prometheus
+    subgraph "Docker Stack /opt/webstack"
+        Apache -->|Static Files| HTML[Volumen: Frontend]
+        Apache -->|FastCGI:9000| PHP[PHP 8.3 FPM]
+        Apache -.->|LDAPS:636| LDAP[Servidor LDAP Externo]
+        
+        Prometheus[Prometheus] -->|Scrape| Apache
+        Prometheus -->|Scrape| NodeExp[Node Exporter]
+        Prometheus -->|Scrape| cAdvisor[cAdvisor]
+        
+        Grafana[Grafana] -->|Query:9090| Prometheus
+    end
 ```
 
 ---
 
 ## 🛠 Tecnologías Utilizadas
 
-- **AWS EC2**: Servidores virtuales donde se ejecuta el stack.
-- **Docker & Docker Compose**: Orquestación de contenedores. Permite levantar todo el entorno con un solo comando.
-- **Ansible**: Automatización de la configuración. Se conecta a los servidores, instala Docker, copia los archivos y levanta los servicios.
-- **GitHub Actions**: CI/CD. Detecta cambios en el código y lanza Ansible automáticamente.
-- **Apache + PHP-FPM**: Stack web clásico pero desacoplado en microservicios.
-- **Prometheus + Grafana**: Stack estándar de la industria para observabilidad.
+| Tecnología | Propósito |
+|------------|-----------|
+| **AWS EC2** | Infraestructura de cómputo (Ubuntu 24.04). |
+| **Docker Compose** | Orquestación de contenedores (Apache, PHP, Monitoring). |
+| **Ansible** | Aprovisionamiento y configuración de servidores. Uso de **Jinja2** para templating. |
+| **GitHub Actions** | Pipeline de CI/CD para despliegue continuo. |
+| **Apache 2.4** | Servidor web y Proxy Inverso con soporte `mod_authnz_ldap`. |
+| **Prometheus/Grafana** | Stack de monitorización líder en la industria. |
 
 ---
 
 ## 📂 Estructura del Repositorio
 
-Entender dónde está cada archivo es clave para operar el sistema:
-
 | Ruta | Descripción |
 |------|-------------|
-| `.github/workflows/ansible-deploy.yml` | **Pipeline CI/CD**. Define los pasos para conectar a AWS y ejecutar Ansible. |
-| `ansible-web/` | **Corazón de la Automatización**. |
-| ├── `host.ini` | Inventario (IPs de tus servidores). |
-| ├── `tasks/main.yml` | Pasos del despliegue (Copiar archivos, Pull, Build, Up). |
-| └── `templates/env.j2` | Plantilla para generar el archivo `.env` con secretos. |
-| `apache/` | **Configuración Web**. Vhosts y certificados SSL. |
-| `apps/` | **Código Fuente**. Aquí pones tu HTML y PHP. |
-| `docker-compose.yml` | **Orquestador**. Define qué contenedores se levantan y cómo se comunican. |
+| `.github/workflows/` | **CI/CD**: Define el pipeline de despliegue (`ansible-deploy.yml`). |
+| `ansible-web/` | **Automatización**: Playbooks, roles y templates. |
+| ├── `host.ini` | Inventario de servidores. |
+| ├── `tasks/main.yml` | Lógica principal del despliegue (Clean -> Copy -> Template -> Deploy). |
+| └── `templates/` | Plantillas Jinja2 (`env.j2`, `webstack.conf.j2`) para inyección segura de variables. |
+| `apache/` | **Configuración Web**: Dockerfile personalizado, certificados SSL. |
+| `apps/` | **Código**: Aplicaciones Frontend y PHP. |
+| `docker-compose.yml` | **Definición del Stack**: Servicios, redes y volúmenes. |
 
 ---
 
 ## 🚀 Requisitos Previos
 
-Antes de empezar, asegúrate de tener:
+Para implementar este proyecto desde cero necesitas:
 
-1.  **Instancias AWS**: Servidores Ubuntu 24.04 con acceso SSH.
+1.  **Secretos de GitHub** (Configurados en Settings > Secrets):
+    - `ANSIBLE_PRIVATE_KEY`: Clave SSH privada (`.pem`) con acceso root/sudo a las instancias.
+    - Credentials de AWS (si usas Terraform en el pipeline): `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`.
 2.  **Puertos Abiertos (Security Groups)**:
-    - `22` (SSH) - Solo para admin/GitHub Actions.
-    - `80` (HTTP) y `443` (HTTPS) - Acceso Web.
-    - `3000` (Grafana) y `9090` (Prometheus) - Monitorización.
-3.  **Secretos en GitHub**:
-    Ve a `Settings > Secrets and variables > Actions` y añade:
-    - `ANSIBLE_PRIVATE_KEY`: El contenido de tu archivo `.pem`.
+    - `22`: SSH (Solo IPs autorizadas).
+    - `80/443`: Tráfico Web.
+    - `3000`: Acceso a Grafana.
+    - `9090`: Acceso a Prometheus (opcional, para debug).
 
 ---
 
-## ⚙ Guía de Despliegue Automático (GitHub Actions)
+## 🔄 Flujo de Trabajo (CI/CD)
 
-Es el método recomendado.
+Cada vez que haces un **Push** a la rama `main`:
 
-1.  Modifica cualquier archivo (ej. `apps/frontend/index.html`).
-2.  Haz un **Commit** y **Push** a la rama `main`.
-3.  Ve a la pestaña **Actions** en GitHub.
-4.  Verás un flujo de trabajo ejecutándose que:
-    - Instala Ansible.
-    - Se conecta a tus servidores EC2.
-    - Actualiza el código y reinicia los contenedores.
+1.  **Pre-Procesamiento**: GitHub Actions instala Ansible y configura la clave SSH.
+2.  **Ejecución de Ansible**:
+    - **Limpieza**: Ejecuta `docker compose down --remove-orphans` para asegurar un entorno limpio.
+    - **Templating**: Genera `webstack.conf` y `.env` usando los valores reales de las variables.
+    - **Build & Deploy**: Construye las imágenes y levanta los contenedores.
+    - **Verificación**: Espera (hasta 300s) a que el puerto 443 responda.
 
 ---
 
 ## 🛠 Guía de Despliegue Manual
 
-Útil para depuración o si no quieres usar GitHub Actions.
-
-1.  Instala Ansible: `sudo apt install ansible`.
-2.  Configura tu clave SSH (ej. `clave.pem`).
-3.  Ejecuta el playbook desde la raíz del proyecto:
+Si necesitas desplegar localmente sin GitHub Actions:
 
 ```bash
-# Deshabilita la comprobación estricta de host (opcional, para evitar "yes/no")
+# 1. Instalar Ansible
+sudo apt update && sudo apt install -y ansible
+
+# 2. Configurar variables (opcional, o editar vars/main.yml)
 export ANSIBLE_HOST_KEY_CHECKING=False
 
-# Ejecuta el playbook
+# 3. Ejecutar Playbook
 ansible-playbook -i ansible-web/host.ini ansible-web/tasks/main.yml \
-  --private-key /ruta/a/tu/clave.pem \
-  --extra-vars "domain=midominio.com le_email=admin@test.com"
+  --private-key ~/.ssh/tu-clave.pem
 ```
+
+---
+
+## 📈 Monitorización y Métricas
+
+Accede a **Grafana** en `http://<IP-SERVIDOR>:3000`.
+- **Usuario**: `admin`
+- **Contraseña**: `admin` (se recomienda cambiar al primer inicio).
+
+Métricas disponibles:
+- **Uso de CPU/Memoria** (vía cAdvisor).
+- **Tráfico de Red** (vía Node Exporter).
+- **Estado de Contenedores**.
 
 ---
 
 ## ❓ Solución de Problemas
 
-### Error: `AnsibleActionFail: Could not find or access ...`
-- **Causa**: Ansible no encuentra los archivos locales para copiarlos al servidor.
-- **Solución**: Asegúrate de que las rutas en `main.yml` usan `../../` para referenciar la raíz del proyecto.
+### 1. "Timeout waiting for port 443"
+- **Causa**: Apache tarda en iniciar o falló en el arranque.
+- **Solución**: Revisamos los logs. El timeout en Ansible se ha aumentado a **300 segundos**.
+- **Debug**: `docker logs webstack-apache`
 
-### Error: `Docker Compose ... non-zero return code`
-- **Causa**: Timeout al descargar imágenes o error en la construcción.
-- **Solución**: El playbook ahora divide el proceso en `pull`, `build` y `up` para identificar dónde falla. Revisa los logs de la Action para ver cuál paso falló.
+### 2. "Apache Container Restarting..."
+- **Historial**: Ocurrió por problemas de sintaxis en `webstack.conf` al usar variables `${ENV:...}`.
+- **Solución Final**: Se migró a **Plantillas Jinja2**. Ahora Ansible genera un archivo de configuración válido antes de subirlo.
 
-### Apache no inicia (CrashLoopBackOff)
-- **Causa**: Faltan certificados SSL.
-- **Solución**: Asegúrate de que existen `apache/ssl/fullchain.pem` y `apache/ssl/privkey.pem`. Si no, genéralos con `openssl` (ver pasos anteriores).
+### 3. Error "Exit Code 100" en Docker Build
+- **Causa**: Paquete obsoleto `libapache2-mod-authnz-ldap` en Ubuntu 24.04.
+- **Solución**: Eliminado del Dockerfile (el módulo ya viene en el core de Apache).
 
 ---
-Autor: Héctor | Proyecto Cloud Computing
-
+**Proyecto Cloud Computing** | Desarrollado con ❤️ y Automatización.

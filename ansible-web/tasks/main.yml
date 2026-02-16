@@ -53,6 +53,17 @@
         dest: /opt/webstack/apache/
         mode: "0755"
 
+    - name: Limpiar configuraciones antiguas de Apache
+      ansible.builtin.file:
+        path: /opt/webstack/apache/sites-enabled
+        state: absent
+
+    - name: Recrear directorio sites-enabled
+      ansible.builtin.file:
+        path: /opt/webstack/apache/sites-enabled
+        state: directory
+        mode: "0755"
+
     - name: Generar configuración de VirtualHost con Jinja2
       ansible.builtin.template:
         src: ../templates/webstack.conf.j2
