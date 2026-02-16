@@ -142,5 +142,21 @@ Métricas disponibles:
 - **Uso de CPU/Memoria** (vía cAdvisor).
 - **Tráfico de Red** (vía Node Exporter).
 - **Estado de Contenedores**.
+
+---
+
+## 🚦 Verificación del Despliegue
+
+Una vez completado el pipeline y esperando unos minutos para el arranque:
+
+| Servicio | URL | Descripción |
+|----------|-----|-------------|
+| **Frontend** | `https://tu-dominio.com/` | Página de bienvenida estática (HTML/JS). |
+| **PHP App** | `https://tu-dominio.com/phpapp` | Aplicación dinámica procesada por PHP-FPM. |
+| **Admin Panel** | `https://tu-dominio.com/admin` | Área protegida con **LDAP**. Requiere autenticación. |
+| **Grafana** | `http://<IP-SERVIDOR>:3000` | Dashboards de monitorización visual. |
+| **Prometheus** | `http://<IP-SERVIDOR>:9090` | Motor de métricas (Raw Data). |
+
+> **Nota**: Sustituye `https://tu-dominio.com` por el dominio configurado en `ansible-web/vars/main.yml`.
 ---
 **Proyecto Cloud Computing** | Desarrollado con ❤️ y Automatización.
