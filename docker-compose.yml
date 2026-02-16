@@ -17,7 +17,9 @@ services:
       - php
 
   php:
-    image: php-ldap:custom
+    build:
+      context: ./php
+      dockerfile: Dockerfile
     container_name: php
     restart: unless-stopped
     volumes:

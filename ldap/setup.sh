@@ -39,10 +39,6 @@ else
     echo "Certificates already exist in certs/"
 fi
 
-# 3. Construir imagen PHP con soporte LDAP
-echo "Building PHP image..."
-docker build -t php-ldap:custom -f Dockerfile .
-
 # 4. Levantar el servicio
 echo "Starting LDAP container..."
 docker compose down

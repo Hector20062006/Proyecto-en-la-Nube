@@ -35,12 +35,17 @@
         path: /opt/webstack/docker-compose.yml
       register: stack_exists
 
-    - name: Detener y eliminar contenedores/imágenes antiguos (Deep Cleanup)
+    - name: Detener y eliminar contenedores/imágenes antiguos
       ansible.builtin.command:
         cmd: docker compose down --rmi local --volumes --remove-orphans
         chdir: /opt/webstack
       when: stack_exists.stat.exists
       changed_when: true
+
+    - name: Eliminar imagen PHP antigua si existe
+      ansible.builtin.shell: docker rmi webstack-php:latest webstack-php || true
+      changed_when: false
+      ignore_errors: true
 
     - name: Eliminar directorio de despliegue completo
       ansible.builtin.file:
@@ -58,6 +63,7 @@
         - /opt/webstack/apache/sites-enabled
         - /opt/webstack/apps
         - /opt/webstack/prometheus
+        - /opt/webstack/php
 
     - name: Copiar docker-compose.yml
       ansible.builtin.copy:
@@ -69,6 +75,12 @@
       ansible.builtin.copy:
         src: ../../apache/
         dest: /opt/webstack/apache/
+        mode: "0755"
+
+    - name: Copiar configuración de PHP
+      ansible.builtin.copy:
+        src: ../../php/
+        dest: /opt/webstack/php/
         mode: "0755"
 
     - name: Crear directorio SSL en remoto
