@@ -16,4 +16,6 @@ RUN a2enmod \
 RUN ln -sf /proc/1/fd/1 /var/log/apache2/access.log \
   && ln -sf /proc/1/fd/2 /var/log/apache2/error.log
 
+EXPOSE 80 443
+
 CMD ["apachectl", "-D", "FOREGROUND"]
