@@ -17,7 +17,9 @@ services:
       - php
 
   php:
-    image: php:8.3-fpm-alpine
+    build:
+      context: ./php
+      dockerfile: Dockerfile
     container_name: php
     restart: unless-stopped
     volumes:
