@@ -6,7 +6,7 @@ services:
     environment:
       LDAP_ORGANISATION: "hector"
       LDAP_DOMAIN: "hector.local"
-      LDAP_ADMIN_PASSWORD: "hector"
+      LDAP_ADMIN_PASSWORD: "${LDAP_ADMIN_PASSWORD}"
 
       LDAP_TLS: "true"
       LDAP_TLS_CRT_FILENAME: "fullchain.pem"

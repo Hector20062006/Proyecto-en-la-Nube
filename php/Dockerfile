@@ -1,13 +1,24 @@
 FROM php:8.3-fpm-alpine
 
-# Install LDAP dependencies
+# Install dependencies for PHP extensions
 RUN apk add --no-cache \
     ldb-dev \
     libldap \
-    openldap-dev
+    openldap-dev \
+    libpng-dev \
+    libzip-dev \
+    icu-dev \
+    oniguruma-dev
 
-# Install and enable LDAP PHP extension
-RUN docker-php-ext-install ldap
+# Install PHP extensions
+RUN docker-php-ext-install \
+    ldap \
+    mysqli \
+    pdo_mysql \
+    gd \
+    zip \
+    intl \
+    opcache
 
 # Enable error logging to stderr
 RUN echo "log_errors = On" >> /usr/local/etc/php/conf.d/docker-php-ext-logging.ini \

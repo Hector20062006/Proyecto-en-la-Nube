@@ -30,10 +30,27 @@ services:
       - "ldap.hector.local:10.1.2.246"
 
   node_exporter:
-    image: prom/node-exporter
+    image: prom/node-exporter:latest
     container_name: node_exporter
     restart: unless-stopped
     network_mode: host
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    depends_on:
+      - redis
 
   prometheus:
     image: prom/prometheus
@@ -43,6 +60,8 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   grafana:
     image: grafana/grafana
