@@ -1,9 +1,7 @@
-
-# Asegurar que las variables de entorno están disponibles
-PassEnv DOMAIN LE_EMAIL LDAP_URL LDAP_BIND_DN LDAP_BIND_PW LDAP_ADMINS_GROUP_DN
+# Configuración generada por Ansible
 
 <VirtualHost *:80>
-    ServerName ${ENV:DOMAIN}
+    ServerName {{ domain }}
     # Redirigir todo el tráfico HTTP a HTTPS
     RewriteEngine On
     RewriteCond %{HTTPS} off
@@ -11,7 +9,7 @@ PassEnv DOMAIN LE_EMAIL LDAP_URL LDAP_BIND_DN LDAP_BIND_PW LDAP_ADMINS_GROUP_DN
 </VirtualHost>
 
 <VirtualHost *:443>
-    ServerName ${ENV:DOMAIN}
+    ServerName {{ domain }}
 
     SSLEngine on
     SSLCertificateFile /etc/apache2/ssl/fullchain.pem
@@ -35,8 +33,6 @@ PassEnv DOMAIN LE_EMAIL LDAP_URL LDAP_BIND_DN LDAP_BIND_PW LDAP_ADMINS_GROUP_DN
     </Directory>
 
     # Configuración para la aplicación PHP
-    # Asumimos que la app PHP está en /phpapp o similar, o servimos PHP para archivos .php
-    # Si la app PHP es una subcarpeta o alias:
     Alias /phpapp /var/www/phpapp
     <Directory /var/www/phpapp>
         Require all granted
@@ -44,7 +40,6 @@ PassEnv DOMAIN LE_EMAIL LDAP_URL LDAP_BIND_DN LDAP_BIND_PW LDAP_ADMINS_GROUP_DN
         AllowOverride All
     </Directory>
     
-    # Prerrequisito para PHP-FPM
     <FilesMatch \.php$>
         SetHandler "proxy:fcgi://php:9000"
     </FilesMatch>
@@ -57,12 +52,12 @@ PassEnv DOMAIN LE_EMAIL LDAP_URL LDAP_BIND_DN LDAP_BIND_PW LDAP_ADMINS_GROUP_DN
         AuthBasicProvider ldap
 
         # Configuración LDAP
-        AuthLDAPURL "${ENV:LDAP_URL}"
-        AuthLDAPBindDN "${ENV:LDAP_BIND_DN}"
-        AuthLDAPBindPassword "${ENV:LDAP_BIND_PW}"
+        AuthLDAPURL "{{ ldap_url }}"
+        AuthLDAPBindDN "{{ ldap_bind_dn }}"
+        AuthLDAPBindPassword "{{ ldap_bind_pw }}"
         
         # Requerir grupo específico
-        Require ldap-group ${ENV:LDAP_ADMINS_GROUP_DN}
+        Require ldap-group {{ ldap_admins_group_dn }}
 
         Options -Indexes
     </Directory>

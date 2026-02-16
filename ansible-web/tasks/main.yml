@@ -53,6 +53,12 @@
         dest: /opt/webstack/apache/
         mode: "0755"
 
+    - name: Generar configuración de VirtualHost con Jinja2
+      ansible.builtin.template:
+        src: ../templates/webstack.conf.j2
+        dest: /opt/webstack/apache/sites-enabled/webstack.conf
+        mode: "0644"
+
     - name: Copiar aplicaciones (apps)
       ansible.builtin.copy:
         src: ../../apps/
