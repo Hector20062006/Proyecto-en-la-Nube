@@ -28,7 +28,7 @@ El sistema utiliza una arquitectura de microservicios contenerizados sobre insta
 
 1.  **HTTPS (443)**: Todo el tráfico de entrada llega a Apache.
     - Se fuerza redirección automática de HTTP (80) a HTTPS (443).
-    - Se utiliza **Terminación SSL** en Apache con certificados generados.
+    - **Certificados SSL Autosignados**: Generados automáticamente en el servidor durante el despliegue para máxima seguridad y simplicidad.
 2.  **Enrutamiento**:
     - **Frontend (/):** Sirve contenido estático HTML/JS desde un volumen Docker.
     - **Backend (/phpapp):** Redirige peticiones `.php` al contenedor **PHP-FPM** vía protocolo FastCGI (puerto 9000).
@@ -76,9 +76,9 @@ graph TD
 | `.github/workflows/` | **CI/CD**: Define el pipeline de despliegue (`ansible-deploy.yml`). |
 | `ansible-web/` | **Automatización**: Playbooks, roles y templates. |
 | ├── `host.ini` | Inventario de servidores. |
-| ├── `tasks/main.yml` | Lógica principal del despliegue (Clean -> Copy -> Template -> Deploy). |
-| └── `templates/` | Plantillas Jinja2 (`env.j2`, `webstack.conf.j2`) para inyección segura de variables. |
-| `apache/` | **Configuración Web**: Dockerfile personalizado, certificados SSL. |
+| ├── `tasks/main.yml` | Lógica principal (Clean -> Gen SSL -> Template -> Deploy). |
+| └── `templates/` | Plantillas Jinja2 (`env.j2`, `webstack.conf.j2`). |
+| `apache/` | **Configuración Web**: Dockerfile personalizado. |
 | `apps/` | **Código**: Aplicaciones Frontend y PHP. |
 | `docker-compose.yml` | **Definición del Stack**: Servicios, redes y volúmenes. |
 
@@ -105,9 +105,11 @@ Cada vez que haces un **Push** a la rama `main`:
 
 1.  **Pre-Procesamiento**: GitHub Actions instala Ansible y configura la clave SSH.
 2.  **Ejecución de Ansible**:
-    - **Limpieza**: Ejecuta `docker compose down --remove-orphans` para asegurar un entorno limpio.
-    - **Templating**: Genera `webstack.conf` y `.env` usando los valores reales de las variables.
-    - **Build & Deploy**: Construye las imágenes y levanta los contenedores.
+    - **Limpieza**: Borra completamente `/opt/webstack` y las imágenes locales para asegurar un entorno **inmaculado**.
+    - **Infraestructura**: Recrea los directorios necesarios.
+    - **SSL**: Genera un nuevo certificado SSL autosignado directamente en el servidor.
+    - **Templating**: Inyecta las variables de entorno en la configuración de Apache.
+    - **Build & Deploy**: Construye las imágenes "frescas" (con el nuevo certificado) y levanta el stack.
     - **Verificación**: Espera (hasta 300s) a que el puerto 443 responda.
 
 ---
@@ -140,23 +142,5 @@ Métricas disponibles:
 - **Uso de CPU/Memoria** (vía cAdvisor).
 - **Tráfico de Red** (vía Node Exporter).
 - **Estado de Contenedores**.
-
----
-
-## ❓ Solución de Problemas
-
-### 1. "Timeout waiting for port 443"
-- **Causa**: Apache tarda en iniciar o falló en el arranque.
-- **Solución**: Revisamos los logs. El timeout en Ansible se ha aumentado a **300 segundos**.
-- **Debug**: `docker logs webstack-apache`
-
-### 2. "Apache Container Restarting..."
-- **Historial**: Ocurrió por problemas de sintaxis en `webstack.conf` al usar variables `${ENV:...}`.
-- **Solución Final**: Se migró a **Plantillas Jinja2**. Ahora Ansible genera un archivo de configuración válido antes de subirlo.
-
-### 3. Error "Exit Code 100" en Docker Build
-- **Causa**: Paquete obsoleto `libapache2-mod-authnz-ldap` en Ubuntu 24.04.
-- **Solución**: Eliminado del Dockerfile (el módulo ya viene en el core de Apache).
-
 ---
 **Proyecto Cloud Computing** | Desarrollado con ❤️ y Automatización.
