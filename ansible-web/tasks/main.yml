@@ -41,6 +41,7 @@
         chdir: /opt/webstack
       when: stack_exists.stat.exists
       changed_when: true
+      ignore_errors: true
 
     - name: Eliminar imagen PHP antigua si existe
       ansible.builtin.shell: docker rmi webstack-php:latest webstack-php || true
