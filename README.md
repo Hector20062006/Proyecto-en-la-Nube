@@ -177,4 +177,4 @@ Esto levantará un servidor OpenLDAP configurado con SSL (`ldaps://`) y una estr
 ---
 
 **Proyecto Cloud Computing** | Infraestructura Automatizada y Segura.
-Hecho con mucho cariño y amor
+Hecho con mucho cariño
