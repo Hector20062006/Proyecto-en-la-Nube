@@ -7,11 +7,9 @@
 **/*.crt
 **/*.p12
 **/*.pcap
-terraform/.terraform/
-terraform/terraform.tfstate
-terraform/terraform.tfstate.backup
-terraform/.terraform.lock.hcl
 docker/ldap/env/ldap.env
 docker/web/apache/ssl/live/
 docker/ldap/certs/live/
 .vscode
+*.terraform*
+*terraform.*
