@@ -38,11 +38,24 @@ El sistema utiliza una arquitectura de microservicios contenerizados sobre insta
     - **Grafana**: Visualización en tiempo real del estado de la infraestructura.
 
 ---
+### Topología de Red (Terraform)
 
+La base de la infraestructura se despliega mediante **Terraform**, creando un entorno de red seguro y segmentado:
+
+*   **Doble VPC con Peering**: Se despliegan dos Virtual Private Clouds (`vpc-1`, `vpc-2`) interconectadas mediante **VPC Peering**, permitiendo comunicación privada de baja latencia entre ellas.
+*   **Segmentación de Subredes**:
+    *   **Públicas**: Alojan componentes accesibles desde internet (NAT Gateways, Load Balancers).
+    *   **Privadas**: Alojan las instancias de cómputo (EC2) y bases de datos, sin acceso directo desde el exterior.
+*   **Enrutamiento y Salida a Internet**:
+    *   **Internet Gateways (IGW)**: Para las subredes públicas.
+    *   **NAT Gateways**: Permiten a las instancias en subredes privadas acceder a internet (ej. para actualizaciones) sin exponerse a conexiones entrantes.
+
+---
 ## 🛠 Tecnologías Utilizadas
 
 | Tecnología | Descripción y Uso |
 |------------|-------------------|
+| **Terraform** | Infraestructura como Código (IaC) para red y seguridad. |
 | **AWS EC2** | Plataforma de cómputo en la nube (Ubuntu 24.04). |
 | **Docker Compose** | Orquestación de servicios (Web, App, LDAP, Monitoring). |
 | **Ansible** | Aprovisionamiento de servidores y gestión de configuraciones idempotentes. |
@@ -164,3 +177,4 @@ Esto levantará un servidor OpenLDAP configurado con SSL (`ldaps://`) y una estr
 ---
 
 **Proyecto Cloud Computing** | Infraestructura Automatizada y Segura.
+Hecho con mucho cariño
