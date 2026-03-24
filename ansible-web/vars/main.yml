@@ -1,8 +1,8 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # vars file for ansible-web
-domain: "web1.tudominio.com"
-le_email: "tuemail@tudominio.com"
+domain: "web1.dakn3t.com"
+le_email: "hrp7511@gmail.com"
 
 ldap_url: "ldaps://ldap.hector.local:636/ou=people,dc=hector,dc=local?uid"
 ldap_bind_dn: "cn=admin,dc=hector,dc=local"
