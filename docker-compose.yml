@@ -13,8 +13,9 @@ services:
       - ./apps/frontend:/var/www/frontend:ro
       - ./apps/phpapp:/var/www/phpapp:ro
       - ./apache/ca:/usr/local/share/ca-certificates/custom:ro
+      - ./apache/ldap.conf:/etc/ldap/ldap.conf:ro
     extra_hosts:
-      - "ldap.hector.local:10.1.2.246"
+      - "ldap.hector.local:10.1.2.117"
     depends_on:
       - php
 
