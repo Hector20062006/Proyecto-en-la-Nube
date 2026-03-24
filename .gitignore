@@ -1,18 +1,15 @@
 ## `.gitignore`
 
 ```gitignore
-.gitignore
 **/.DS_Store
 **/*.pem
 **/*.key
 **/*.crt
 **/*.p12
 **/*.pcap
-Infraestructura/.terraform/
-Infraestructura/terraform.tfstate
-Infraestructura/terraform.tfstate.backup
-Infraestructura/.terraform.lock.hcl
 docker/ldap/env/ldap.env
 docker/web/apache/ssl/live/
 docker/ldap/certs/live/
 .vscode
+*.terraform*
+*terraform.*
