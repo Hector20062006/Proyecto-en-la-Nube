@@ -146,6 +146,16 @@
       register: compose_up
       changed_when: "'Started' in compose_up.stdout or 'Recreated' in compose_up.stdout"
 
+    - name: Forzar confianza en certificados (Idempotente)
+      community.docker.docker_container_exec:
+        container: apache
+        command: bash -c "grep -qF 'TLS_REQCERT allow' /etc/ldap/ldap.conf || echo 'TLS_REQCERT allow' >> /etc/ldap/ldap.conf"
+
+    - name: Reiniciar Apache
+      community.docker.docker_container_exec:
+        container: apache
+        command: service apache2 restart
+
     - name: Ver contenedores activos
       ansible.builtin.command: docker ps
       changed_when: false
