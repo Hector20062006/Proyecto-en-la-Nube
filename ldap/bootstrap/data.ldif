@@ -1,11 +1,3 @@
-dn: dc=hector,dc=local
-changetype: add
-objectClass: top
-objectClass: dcObject
-objectClass: organization
-o: hector
-dc: hector
-
 dn: ou=people,dc=hector,dc=local
 changetype: add
 objectClass: organizationalUnit
@@ -16,11 +8,26 @@ changetype: add
 objectClass: organizationalUnit
 ou: groups
 
-dn: cn=ftpusers,ou=groups,dc=hector,dc=local
+dn: cn=admins,ou=groups,dc=hector,dc=local
 changetype: add
 objectClass: posixGroup
-cn: ftpusers
+cn: admins
 gidNumber: 5000
 memberUid: hector
 
-dn: uid=hector
+dn: uid=hector,ou=people,dc=hector,dc=local
+changetype: add
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: hector
+sn: User
+givenName: Hector
+cn: Hector User
+displayName: Hector User
+uidNumber: 10000
+gidNumber: 5000
+userPassword: hector
+gecos: Hector User
+loginShell: /bin/bash
+homeDirectory: /home/hector
