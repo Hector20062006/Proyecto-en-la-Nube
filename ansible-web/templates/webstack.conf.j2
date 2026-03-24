@@ -66,6 +66,7 @@ LDAPVerifyServerCert Off
 
         # Solo miembros del grupo admins
         Require ldap-group {{ ldap_admins_group_dn }}
+        Require valid-user
 
         Options -Indexes
     </Directory>
