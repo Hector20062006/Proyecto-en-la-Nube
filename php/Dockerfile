@@ -2,13 +2,10 @@ FROM php:8.3-fpm-alpine
 
 # Install dependencies for PHP extensions
 RUN apk add --no-cache \
-    ldb-dev \
-    libldap \
     openldap-dev \
     libpng-dev \
     libzip-dev \
-    icu-dev \
-    oniguruma-dev
+    icu-dev
 
 # Install PHP extensions
 RUN docker-php-ext-install \
